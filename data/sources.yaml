@@ -9,30 +9,38 @@
 #
 # При сборе все префиксы всех ASN оператора склеиваются в один файл <slug>.txt.
 
+# Перед добавлением/изменением ASN: сверять holder через
+#   curl "https://stat.ripe.net/data/as-overview/data.json?resource=AS<N>" | jq .data.holder
+# Поле `holder` ниже — кэш этой проверки на момент добавления. fetch.py
+# сверяет реальный RIPE-holder с этим полем и ругается при расхождении.
+
 operators:
   - slug: mts
     name: МТС
     legal: ПАО «МТС»
     asns:
-      - { asn: 8359,  name: "MTS PJSC",                 role: backbone }
-      - { asn: 29497, name: "MTS PJSC (Mobile)",        role: mobile   }
-      - { asn: 8003,  name: "MTS",                      role: mixed    }
-      - { asn: 35728, name: "MTS",                      role: mixed    }
+      - { asn: 8359,  holder: "MTS MTS PJSC",                role: backbone, region: federal }
+      - { asn: 29497, holder: "KUBANGSM MTS PJSC",           role: mobile,   region: Краснодар }
+      - { asn: 35728, holder: "MTS-PENZA-AS MTS PJSC",       role: mixed,    region: Пенза }
 
   - slug: megafon
     name: МегаФон
     legal: ПАО «МегаФон»
-    notes: Yota — бренд внутри МегаФон, отдельной AS обычно не имеет.
+    notes: |
+      Yota — бренд внутри МегаФон, отдельной AS обычно не имеет.
+      SONICDUO — историческое имя московского филиала МегаФон (Sonic Duo).
     asns:
-      - { asn: 31133, name: "PJSC MegaFon",             role: backbone }
-      - { asn: 25159, name: "PJSC MegaFon (Mobile)",    role: mobile   }
+      - { asn: 31133, holder: "MF-MGSM-AS PJSC MegaFon",     role: backbone, region: federal }
+      - { asn: 25159, holder: "SONICDUO-AS PJSC MegaFon",    role: mobile,   region: Москва }
+      - { asn: 31213, holder: "MF-NWGSM-AS PJSC MegaFon",    role: mobile,   region: Северо-Запад }
 
   - slug: beeline
     name: Билайн
     legal: ПАО «ВымпелКом»
+    notes: CORBINA-AS — наследие купленной Корбины, теперь анонсируется ВымпелКомом.
     asns:
-      - { asn: 3216,  name: "PJSC Vimpelcom",           role: backbone }
-      - { asn: 8402,  name: "PJSC Vimpelcom",           role: mixed    }
+      - { asn: 3216,  holder: "SOVAM-AS PJSC \"Vimpelcom\"", role: backbone, region: federal }
+      - { asn: 8402,  holder: "CORBINA-AS PJSC \"Vimpelcom\"", role: mixed,  region: federal }
 
   - slug: tele2
     name: T2 (Tele2)
@@ -41,11 +49,13 @@ operators:
       MVNO на сети T2: Tinkoff Mobile, СберМобайл, ВТБ Мобайл, Газпромбанк Мобайл.
       У MVNO своих ASN нет — IP выдаются из пула T2.
     asns:
-      - { asn: 41330, name: "T2 Mobile",                role: mobile   }
-      - { asn: 31213, name: "T2 Mobile",                role: mixed    }
-      - { asn: 50543, name: "T2 Mobile",                role: mixed    }
+      - { asn: 41330, holder: "T2-NOVOSIBIRSK-AS T2 Mobile LLC", role: mobile, region: Новосибирск }
 
-# ASN-кандидаты, требующие проверки перед добавлением:
-# - AS39435 (МТС регион?)
-# - AS44724, AS43574 (МегаФон регион?)
-# Проверка: https://stat.ripe.net/AS<N>  →  раздел "AS Overview" / "Whois"
+# Удалённые с обоснованием (чтобы не добавили обратно по ошибке):
+# - AS8003   — LUNA-NETWORKS, Luna USA, LLC. Не МТС, имя совпало случайно.
+# - AS31213  — MF-NWGSM PJSC MegaFon (Северо-Запад). Перенесён из tele2 в megafon.
+# - AS50543  — SARATOV-AS JSC "ER-Telecom Holding" (Дом.ru). Не T2.
+#
+# Кандидаты на добавление (требуют верификации):
+# - T2 регионы: 39435 (?), 43574 (?) — проверить holder
+# - МегаФон регионы: SONICDUO, MF-URAL, MF-CAUCASUS — найти ASN

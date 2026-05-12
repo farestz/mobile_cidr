@@ -33,18 +33,26 @@ RAW = DATA / "raw"
 CIDRS = DATA / "cidrs"
 COMBINED = DATA / "combined"
 
-RIPESTAT = "https://stat.ripe.net/data/announced-prefixes/data.json"
+RIPESTAT_PREFIXES = "https://stat.ripe.net/data/announced-prefixes/data.json"
+RIPESTAT_OVERVIEW = "https://stat.ripe.net/data/as-overview/data.json"
 USER_AGENT = "mobile_cidr/0.1 (https://github.com/farestz)"
 
 
 def fetch_asn(client: httpx.Client, asn: int) -> dict:
     """Получить announced-prefixes для одного ASN."""
-    r = client.get(RIPESTAT, params={"resource": f"AS{asn}"}, timeout=30)
+    r = client.get(RIPESTAT_PREFIXES, params={"resource": f"AS{asn}"}, timeout=30)
     r.raise_for_status()
     payload = r.json()
     if payload.get("status") != "ok":
         raise RuntimeError(f"AS{asn}: status={payload.get('status')} messages={payload.get('messages')}")
     return payload
+
+
+def fetch_holder(client: httpx.Client, asn: int) -> str:
+    """Holder из RIPE — для сверки с заявленным в sources.yaml."""
+    r = client.get(RIPESTAT_OVERVIEW, params={"resource": f"AS{asn}"}, timeout=30)
+    r.raise_for_status()
+    return r.json().get("data", {}).get("holder", "")
 
 
 def prefixes_from_payload(payload: dict) -> list[str]:
@@ -101,12 +109,22 @@ def main() -> int:
 
     asn_to_prefixes: dict[int, list[str]] = {}
 
+    holder_mismatches: list[str] = []
+
     with httpx.Client(headers={"User-Agent": USER_AGENT}) as client:
         for op in operators:
             slug = op["slug"]
             for entry in op["asns"]:
                 asn = entry["asn"]
-                print(f"[{slug}] AS{asn} {entry['name']!r}…", flush=True)
+                expected_holder = entry.get("holder", "")
+                actual_holder = fetch_holder(client, asn)
+                marker = "OK" if actual_holder == expected_holder else "MISMATCH"
+                print(f"[{slug}] AS{asn} holder={actual_holder!r} [{marker}]", flush=True)
+                if marker == "MISMATCH":
+                    holder_mismatches.append(
+                        f"  AS{asn} ({slug}): expected {expected_holder!r}, got {actual_holder!r}"
+                    )
+
                 payload = fetch_asn(client, asn)
                 (RAW / f"AS{asn}.json").write_text(
                     json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
@@ -154,6 +172,15 @@ def main() -> int:
     )
 
     print(f"\ncombined: {len(sorted_all)} unique CIDR (IPv4 only)")
+
+    if holder_mismatches:
+        print("\nWARNING: RIPE holder ≠ заявленный в sources.yaml:", file=sys.stderr)
+        for line in holder_mismatches:
+            print(line, file=sys.stderr)
+        print("Проверьте, что AS не переехал к другому оператору. "
+              "Если переехал — поправьте sources.yaml. Если просто переименован "
+              "и принадлежит тому же оператору — обновите поле holder.",
+              file=sys.stderr)
     return 0
 
 
