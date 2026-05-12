@@ -9,19 +9,19 @@
   "version": "1.2",
   "data_call_name": "announced-prefixes",
   "data_call_status": "supported",
-  "cached": true,
-  "query_id": "20260512172553-86cb9fd3-6576-4aef-8648-b7c86c55d5e5",
-  "process_time": 0,
+  "cached": false,
+  "query_id": "20260512172604-1f458fdf-dafc-4619-bb27-c99cecc169e3",
+  "process_time": 34,
   "server_id": "app182",
   "build_version": "v0.9.17-2026.05.07",
   "pipeline": "1257139",
   "status": "ok",
   "status_code": 200,
-  "time": "2026-05-12T17:25:53.045957",
+  "time": "2026-05-12T17:26:04.647480",
   "data": {
     "prefixes": [
       {
-        "prefix": "82.209.64.0/18",
+        "prefix": "37.29.76.0/22",
         "timelines": [
           {
             "starttime": "2026-04-28T08:00:00",
@@ -30,7 +30,7 @@
         ]
       },
       {
-        "prefix": "95.83.64.0/18",
+        "prefix": "78.41.100.0/22",
         "timelines": [
           {
             "starttime": "2026-04-28T08:00:00",
@@ -39,7 +39,7 @@
         ]
       },
       {
-        "prefix": "85.234.32.0/19",
+        "prefix": "2a03:d000:8740::/48",
         "timelines": [
           {
             "starttime": "2026-04-28T08:00:00",
@@ -48,7 +48,7 @@
         ]
       },
       {
-        "prefix": "92.246.160.0/19",
+        "prefix": "31.173.176.0/20",
         "timelines": [
           {
             "starttime": "2026-04-28T08:00:00",
@@ -57,7 +57,7 @@
         ]
       },
       {
-        "prefix": "77.108.192.0/18",
+        "prefix": "178.176.154.0/23",
         "timelines": [
           {
             "starttime": "2026-04-28T08:00:00",
@@ -66,7 +66,7 @@
         ]
       },
       {
-        "prefix": "85.140.44.0/22",
+        "prefix": "2a03:d000:8741::/48",
         "timelines": [
           {
             "starttime": "2026-04-28T08:00:00",
@@ -77,7 +77,7 @@
     ],
     "query_starttime": "2026-04-28T08:00:00",
     "query_endtime": "2026-05-12T08:00:00",
-    "resource": "35728",
+    "resource": "35298",
     "latest_time": "2026-05-12T08:00:00",
     "earliest_time": "2000-08-01T00:00:00"
   }

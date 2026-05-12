@@ -9,19 +9,19 @@
   "version": "1.2",
   "data_call_name": "announced-prefixes",
   "data_call_status": "supported",
-  "cached": true,
-  "query_id": "20260512172553-86cb9fd3-6576-4aef-8648-b7c86c55d5e5",
-  "process_time": 0,
+  "cached": false,
+  "query_id": "20260512172607-de69f00e-6fe1-4aa8-bc90-db1dff716b11",
+  "process_time": 39,
   "server_id": "app182",
   "build_version": "v0.9.17-2026.05.07",
   "pipeline": "1257139",
   "status": "ok",
   "status_code": 200,
-  "time": "2026-05-12T17:25:53.045957",
+  "time": "2026-05-12T17:26:07.763994",
   "data": {
     "prefixes": [
       {
-        "prefix": "82.209.64.0/18",
+        "prefix": "149.62.0.0/19",
         "timelines": [
           {
             "starttime": "2026-04-28T08:00:00",
@@ -30,7 +30,7 @@
         ]
       },
       {
-        "prefix": "95.83.64.0/18",
+        "prefix": "212.92.128.0/18",
         "timelines": [
           {
             "starttime": "2026-04-28T08:00:00",
@@ -39,7 +39,7 @@
         ]
       },
       {
-        "prefix": "85.234.32.0/19",
+        "prefix": "92.242.64.0/19",
         "timelines": [
           {
             "starttime": "2026-04-28T08:00:00",
@@ -48,7 +48,7 @@
         ]
       },
       {
-        "prefix": "92.246.160.0/19",
+        "prefix": "195.98.32.0/19",
         "timelines": [
           {
             "starttime": "2026-04-28T08:00:00",
@@ -57,7 +57,7 @@
         ]
       },
       {
-        "prefix": "77.108.192.0/18",
+        "prefix": "95.31.49.0/24",
         "timelines": [
           {
             "starttime": "2026-04-28T08:00:00",
@@ -66,7 +66,7 @@
         ]
       },
       {
-        "prefix": "85.140.44.0/22",
+        "prefix": "89.189.0.0/19",
         "timelines": [
           {
             "starttime": "2026-04-28T08:00:00",
@@ -77,7 +77,7 @@
     ],
     "query_starttime": "2026-04-28T08:00:00",
     "query_endtime": "2026-05-12T08:00:00",
-    "resource": "35728",
+    "resource": "8371",
     "latest_time": "2026-05-12T08:00:00",
     "earliest_time": "2000-08-01T00:00:00"
   }

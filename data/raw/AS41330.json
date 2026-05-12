@@ -10,14 +10,14 @@
   "data_call_name": "announced-prefixes",
   "data_call_status": "supported",
   "cached": true,
-  "query_id": "20260512172038-08bcefbc-ed61-4047-b132-5a9412d9616a",
-  "process_time": 7,
-  "server_id": "app169",
+  "query_id": "20260512172609-28853511-29ba-48ec-8a50-8098585cbaa9",
+  "process_time": 5,
+  "server_id": "app182",
   "build_version": "v0.9.17-2026.05.07",
   "pipeline": "1257139",
   "status": "ok",
   "status_code": 200,
-  "time": "2026-05-12T17:20:38.348737",
+  "time": "2026-05-12T17:26:09.271965",
   "data": {
     "prefixes": [
       {

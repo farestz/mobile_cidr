@@ -1,46 +1,80 @@
 # Канонический список ASN мобильных операторов РФ.
-# Источники: RIPE DB, RIPEstat, публичные данные операторов.
-# Перед изменением сверяться с https://stat.ripe.net/ и https://bgp.tools/
 #
-# Поля:
-#   asn       — номер AS без префикса "AS"
-#   name      — имя AS по RIPE
-#   role      — backbone | mobile | mixed (для информации, не влияет на сбор)
+# Источник для верификации:
+#   holder:  https://stat.ripe.net/data/as-overview/data.json?resource=AS<N>
+#   поиск:   https://stat.ripe.net/data/searchcomplete/data.json?resource=<query>
 #
-# При сборе все префиксы всех ASN оператора склеиваются в один файл <slug>.txt.
-
-# Перед добавлением/изменением ASN: сверять holder через
-#   curl "https://stat.ripe.net/data/as-overview/data.json?resource=AS<N>" | jq .data.holder
-# Поле `holder` ниже — кэш этой проверки на момент добавления. fetch.py
-# сверяет реальный RIPE-holder с этим полем и ругается при расхождении.
+# Правила отбора:
+#   1. Holder == legal entity оператора (см. поле `legal` у operator).
+#   2. ASN относится к сотовой/GPRS-сети, а НЕ к: cloud, streaming, fixed-line
+#      broadband (МГТС у МТС), enterprise/CDN. Региональные сотовые ASN
+#      (-IRK, -KAZAN, -KAVKAZ и т.п.) включаются.
+#   3. ASN с нулевым числом анонсов оставляем — могут начать анонсировать
+#      позже; полезно фиксировать их принадлежность.
+#
+# `holder` ниже — снимок имени из RIPE на момент добавления. fetch.py
+# при каждом запуске сверяет реальный holder и пишет MISMATCH при расхождении.
 
 operators:
   - slug: mts
     name: МТС
     legal: ПАО «МТС»
     asns:
-      - { asn: 8359,  holder: "MTS MTS PJSC",                role: backbone, region: federal }
-      - { asn: 29497, holder: "KUBANGSM MTS PJSC",           role: mobile,   region: Краснодар }
-      - { asn: 35728, holder: "MTS-PENZA-AS MTS PJSC",       role: mixed,    region: Пенза }
+      - { asn: 8359,   holder: "MTS MTS PJSC",                    region: federal,           role: backbone }
+      - { asn: 13155,  holder: "MTS-IRK-AS MTS PJSC",             region: Иркутск,           role: mobile   }
+      - { asn: 13174,  holder: "MTSNet MTS PJSC",                 region: general,           role: mobile   }
+      - { asn: 16012,  holder: "MTSCenter-AS MTS PJSC",           region: Центр,             role: mobile   }
+      - { asn: 29225,  holder: "MTS-KAZAN-AS MTS PJSC",           region: Казань,            role: mobile   }
+      - { asn: 29497,  holder: "KUBANGSM MTS PJSC",               region: Краснодар,         role: mobile   }
+      - { asn: 30922,  holder: "MTS-FBN-Siberia-AS MTS PJSC",     region: Сибирь,            role: mobile   }
+      - { asn: 31338,  holder: "MTS-Moscow-reserved MTS PJSC",    region: Москва,            role: reserved }
+      - { asn: 34351,  holder: "MTS-IVANOVO-AS MTS PJSC",         region: Иваново,           role: mobile   }
+      - { asn: 35473,  holder: "MTSNET-URAL-AS MTS PJSC",         region: Урал,              role: mobile   }
+      - { asn: 35728,  holder: "MTS-PENZA-AS MTS PJSC",           region: Пенза,             role: mobile   }
+      - { asn: 38996,  holder: "MTSNET-SYKTYVKAR-AS MTS PJSC",    region: Сыктывкар,         role: mobile   }
+      - { asn: 39001,  holder: "MTS MTS PJSC",                    region: general,           role: mobile   }
+      - { asn: 39811,  holder: "MTSNET-FAR-EAST-AS MTS PJSC",     region: Дальний Восток,    role: mobile   }
+      - { asn: 41279,  holder: "MTS-PSE-AS MTS PJSC",             region: general,           role: mobile   }
+      - { asn: 41771,  holder: "MTS-BB-OMSK MTS PJSC",            region: Омск,              role: mobile   }
+      - { asn: 43148,  holder: "MTS-KURGAN-AS MTS PJSC",          region: Курган,            role: mobile   }
+      - { asn: 51116,  holder: "MTS-ANAPA-AS MTS PJSC",           region: Анапа,             role: mobile   }
+      - { asn: 62347,  holder: "MTS_VNov MTS PJSC",               region: Великий Новгород,  role: mobile   }
+      - { asn: 62348,  holder: "MTS-Blagoveschensk MTS PJSC",     region: Благовещенск,      role: mobile   }
 
   - slug: megafon
     name: МегаФон
     legal: ПАО «МегаФон»
     notes: |
-      Yota — бренд внутри МегаФон, отдельной AS обычно не имеет.
-      SONICDUO — историческое имя московского филиала МегаФон (Sonic Duo).
+      Yota — бренд внутри МегаФон, отдельной AS не имеет.
+      SONICDUO — историческое имя московского филиала (Sonic Duo).
+      Региональные ASN охватывают все макрорегионы РФ.
     asns:
-      - { asn: 31133, holder: "MF-MGSM-AS PJSC MegaFon",     role: backbone, region: federal }
-      - { asn: 25159, holder: "SONICDUO-AS PJSC MegaFon",    role: mobile,   region: Москва }
-      - { asn: 31213, holder: "MF-NWGSM-AS PJSC MegaFon",    role: mobile,   region: Северо-Запад }
+      - { asn: 6850,   holder: "MF-AS PJSC MegaFon",              region: general,           role: mobile   }
+      - { asn: 12396,  holder: "MF-MSV-STF PJSC MegaFon",         region: general,           role: mobile   }
+      - { asn: 12714,  holder: "MEGAFON-AS PJSC MegaFon",         region: federal,           role: backbone }
+      - { asn: 25159,  holder: "SONICDUO-AS PJSC MegaFon",        region: Москва,            role: mobile   }
+      - { asn: 31133,  holder: "MF-MGSM-AS PJSC MegaFon",         region: federal,           role: mobile   }
+      - { asn: 31163,  holder: "MF-KAVKAZ-AS PJSC MegaFon",       region: Кавказ,            role: mobile   }
+      - { asn: 31195,  holder: "MF-DV-AS PJSC MegaFon",           region: Дальний Восток,    role: mobile   }
+      - { asn: 31205,  holder: "MF-SIB-AS PJSC MegaFon",          region: Сибирь,            role: mobile   }
+      - { asn: 31208,  holder: "MF-CENTER-AS PJSC MegaFon",       region: Центр,             role: mobile   }
+      - { asn: 31213,  holder: "MF-NWGSM-AS PJSC MegaFon",        region: Северо-Запад,      role: mobile   }
+      - { asn: 31224,  holder: "MF-UGSM-AS PJSC MegaFon",         region: Юг,                role: mobile   }
+      - { asn: 31268,  holder: "MF-GPRS-AS PJSC MegaFon",         region: federal,           role: mobile   }
+      - { asn: 35298,  holder: "MF-MGSM-AS PJSC MegaFon",         region: federal,           role: mobile   }
+      - { asn: 43841,  holder: "MF-DV-AS PJSC MegaFon",           region: Дальний Восток,    role: mobile   }
+      - { asn: 48615,  holder: "MF-AS PJSC MegaFon",              region: general,           role: mobile   }
+      - { asn: 50315,  holder: "MF-AS PJSC MegaFon",              region: general,           role: mobile   }
+      - { asn: 56768,  holder: "MF-AS PJSC MegaFon",              region: general,           role: mobile   }
 
   - slug: beeline
     name: Билайн
     legal: ПАО «ВымпелКом»
-    notes: CORBINA-AS — наследие купленной Корбины, теперь анонсируется ВымпелКомом.
+    notes: CORBINA-AS — наследие купленной Корбины, теперь часть ВымпелКома.
     asns:
-      - { asn: 3216,  holder: "SOVAM-AS PJSC \"Vimpelcom\"", role: backbone, region: federal }
-      - { asn: 8402,  holder: "CORBINA-AS PJSC \"Vimpelcom\"", role: mixed,  region: federal }
+      - { asn: 3216,   holder: "SOVAM-AS PJSC \"Vimpelcom\"",     region: federal,           role: backbone }
+      - { asn: 8371,   holder: "Vimpelcom-NN PJSC \"Vimpelcom\"", region: Нижний Новгород,   role: mobile   }
+      - { asn: 8402,   holder: "CORBINA-AS PJSC \"Vimpelcom\"",   region: federal,           role: mixed    }
 
   - slug: tele2
     name: T2 (Tele2)
@@ -49,13 +83,21 @@ operators:
       MVNO на сети T2: Tinkoff Mobile, СберМобайл, ВТБ Мобайл, Газпромбанк Мобайл.
       У MVNO своих ASN нет — IP выдаются из пула T2.
     asns:
-      - { asn: 41330, holder: "T2-NOVOSIBIRSK-AS T2 Mobile LLC", role: mobile, region: Новосибирск }
+      - { asn: 15378,  holder: "TELE2-RU-AS T2 Mobile LLC",       region: federal,           role: mobile   }
+      - { asn: 41330,  holder: "T2-NOVOSIBIRSK-AS T2 Mobile LLC", region: Новосибирск,       role: mobile   }
+      - { asn: 42437,  holder: "T2-ROSTOV-AS T2 Mobile LLC",      region: Ростов,            role: mobile   }
+      - { asn: 48190,  holder: "T2-EKATERINBURG-AS T2 Mobile LLC", region: Екатеринбург,     role: mobile   }
 
-# Удалённые с обоснованием (чтобы не добавили обратно по ошибке):
-# - AS8003   — LUNA-NETWORKS, Luna USA, LLC. Не МТС, имя совпало случайно.
-# - AS31213  — MF-NWGSM PJSC MegaFon (Северо-Запад). Перенесён из tele2 в megafon.
-# - AS50543  — SARATOV-AS JSC "ER-Telecom Holding" (Дом.ru). Не T2.
+# === ИСКЛЮЧЕНО (намеренно, не возвращать без проверки) ===
 #
-# Кандидаты на добавление (требуют верификации):
-# - T2 регионы: 39435 (?), 43574 (?) — проверить holder
-# - МегаФон регионы: SONICDUO, MF-URAL, MF-CAUCASUS — найти ASN
+# Не мобильные подразделения ПАО «МТС»:
+#   AS49154  MTS-DOM-AS         — МГТС, FTTB/GPON Москва (фиксированный широкополосный)
+#   AS60490  MTS-CLOUD          — облачная инфраструктура
+#   AS209024 MTS-CLOUD-A        — облачная инфраструктура
+#   AS44677  MTS-NGCLOUD-AS     — облачная инфраструктура (NG = Next Gen)
+#   AS198618 MTS-STREAM         — стриминг/контент (KION)
+#
+# Чужие AS, ошибочно бывшие в списке (исторические грабли):
+#   AS8003   LUNA-NETWORKS, Luna USA, LLC — не МТС вообще
+#   AS31213  MF-NWGSM PJSC MegaFon — перенесён в megafon (был в tele2 по ошибке)
+#   AS50543  SARATOV-AS ER-Telecom Holding (Дом.ru) — не T2 (был в tele2 по ошибке)
