@@ -48,7 +48,13 @@ def fetch_asn(client: httpx.Client, asn: int) -> dict:
 
 
 def prefixes_from_payload(payload: dict) -> list[str]:
-    return [p["prefix"] for p in payload.get("data", {}).get("prefixes", [])]
+    """Только IPv4 — IPv6 не используется в потребляющих роутинг-конфигах."""
+    out = []
+    for p in payload.get("data", {}).get("prefixes", []):
+        cidr = p["prefix"]
+        if ipaddress.ip_network(cidr, strict=False).version == 4:
+            out.append(cidr)
+    return out
 
 
 def family(cidr: str) -> int:
@@ -77,7 +83,7 @@ def write_operator(slug: str, asns: list[int], asn_to_prefixes: dict[int, list[s
         "updated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "source": "RIPEstat",
         "prefixes": [
-            {"cidr": c, "asns": seen[c], "family": family(c)}
+            {"cidr": c, "asns": seen[c]}
             for c in sorted_cidrs
         ],
     }
@@ -117,14 +123,12 @@ def main() -> int:
         asns = [e["asn"] for e in op["asns"]]
         doc = write_operator(slug, asns, asn_to_prefixes)
         operator_docs.append(doc)
-        v4 = sum(1 for p in doc["prefixes"] if p["family"] == 4)
-        v6 = sum(1 for p in doc["prefixes"] if p["family"] == 6)
-        print(f"[{slug}] total {len(doc['prefixes'])} ({v4} v4 / {v6} v6)", flush=True)
+        print(f"[{slug}] total {len(doc['prefixes'])} prefixes", flush=True)
 
     all_seen: dict[str, dict] = {}
     for doc in operator_docs:
         for p in doc["prefixes"]:
-            entry = all_seen.setdefault(p["cidr"], {"cidr": p["cidr"], "family": p["family"], "operators": [], "asns": set()})
+            entry = all_seen.setdefault(p["cidr"], {"cidr": p["cidr"], "operators": [], "asns": set()})
             entry["operators"].append(doc["operator"])
             entry["asns"].update(p["asns"])
 
@@ -138,7 +142,6 @@ def main() -> int:
         "prefixes": [
             {
                 "cidr": c,
-                "family": all_seen[c]["family"],
                 "operators": sorted(set(all_seen[c]["operators"])),
                 "asns": sorted(all_seen[c]["asns"]),
             }
@@ -150,9 +153,7 @@ def main() -> int:
         encoding="utf-8",
     )
 
-    v4 = sum(1 for p in combined_doc["prefixes"] if p["family"] == 4)
-    v6 = sum(1 for p in combined_doc["prefixes"] if p["family"] == 6)
-    print(f"\ncombined: {len(sorted_all)} unique CIDR ({v4} v4 / {v6} v6)")
+    print(f"\ncombined: {len(sorted_all)} unique CIDR (IPv4 only)")
     return 0
 
 
