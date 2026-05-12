@@ -1,0 +1,51 @@
+# Канонический список ASN мобильных операторов РФ.
+# Источники: RIPE DB, RIPEstat, публичные данные операторов.
+# Перед изменением сверяться с https://stat.ripe.net/ и https://bgp.tools/
+#
+# Поля:
+#   asn       — номер AS без префикса "AS"
+#   name      — имя AS по RIPE
+#   role      — backbone | mobile | mixed (для информации, не влияет на сбор)
+#
+# При сборе все префиксы всех ASN оператора склеиваются в один файл <slug>.txt.
+
+operators:
+  - slug: mts
+    name: МТС
+    legal: ПАО «МТС»
+    asns:
+      - { asn: 8359,  name: "MTS PJSC",                 role: backbone }
+      - { asn: 29497, name: "MTS PJSC (Mobile)",        role: mobile   }
+      - { asn: 8003,  name: "MTS",                      role: mixed    }
+      - { asn: 35728, name: "MTS",                      role: mixed    }
+
+  - slug: megafon
+    name: МегаФон
+    legal: ПАО «МегаФон»
+    notes: Yota — бренд внутри МегаФон, отдельной AS обычно не имеет.
+    asns:
+      - { asn: 31133, name: "PJSC MegaFon",             role: backbone }
+      - { asn: 25159, name: "PJSC MegaFon (Mobile)",    role: mobile   }
+
+  - slug: beeline
+    name: Билайн
+    legal: ПАО «ВымпелКом»
+    asns:
+      - { asn: 3216,  name: "PJSC Vimpelcom",           role: backbone }
+      - { asn: 8402,  name: "PJSC Vimpelcom",           role: mixed    }
+
+  - slug: tele2
+    name: T2 (Tele2)
+    legal: ООО «Т2 Мобайл»
+    notes: |
+      MVNO на сети T2: Tinkoff Mobile, СберМобайл, ВТБ Мобайл, Газпромбанк Мобайл.
+      У MVNO своих ASN нет — IP выдаются из пула T2.
+    asns:
+      - { asn: 41330, name: "T2 Mobile",                role: mobile   }
+      - { asn: 31213, name: "T2 Mobile",                role: mixed    }
+      - { asn: 50543, name: "T2 Mobile",                role: mixed    }
+
+# ASN-кандидаты, требующие проверки перед добавлением:
+# - AS39435 (МТС регион?)
+# - AS44724, AS43574 (МегаФон регион?)
+# Проверка: https://stat.ripe.net/AS<N>  →  раздел "AS Overview" / "Whois"

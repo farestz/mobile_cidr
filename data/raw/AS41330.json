@@ -1,0 +1,84 @@
+{
+  "messages": [
+    [
+      "info",
+      "Results exclude routes with very low visibility (less than 10 RIS full-feed peers seeing)."
+    ]
+  ],
+  "see_also": [],
+  "version": "1.2",
+  "data_call_name": "announced-prefixes",
+  "data_call_status": "supported",
+  "cached": false,
+  "query_id": "20260512171227-7cfaec40-2b3b-467c-bae9-9960997a1d54",
+  "process_time": 45,
+  "server_id": "app199",
+  "build_version": "v0.9.17-2026.05.07",
+  "pipeline": "1257139",
+  "status": "ok",
+  "status_code": 200,
+  "time": "2026-05-12T17:12:27.103210",
+  "data": {
+    "prefixes": [
+      {
+        "prefix": "81.26.80.0/22",
+        "timelines": [
+          {
+            "starttime": "2026-04-28T08:00:00",
+            "endtime": "2026-05-12T08:00:00"
+          }
+        ]
+      },
+      {
+        "prefix": "81.26.80.0/20",
+        "timelines": [
+          {
+            "starttime": "2026-04-28T08:00:00",
+            "endtime": "2026-05-12T08:00:00"
+          }
+        ]
+      },
+      {
+        "prefix": "91.149.64.0/18",
+        "timelines": [
+          {
+            "starttime": "2026-04-28T08:00:00",
+            "endtime": "2026-05-12T08:00:00"
+          }
+        ]
+      },
+      {
+        "prefix": "176.59.128.0/19",
+        "timelines": [
+          {
+            "starttime": "2026-04-28T08:00:00",
+            "endtime": "2026-05-12T08:00:00"
+          }
+        ]
+      },
+      {
+        "prefix": "81.18.112.0/20",
+        "timelines": [
+          {
+            "starttime": "2026-04-28T08:00:00",
+            "endtime": "2026-05-12T08:00:00"
+          }
+        ]
+      },
+      {
+        "prefix": "159.255.120.0/21",
+        "timelines": [
+          {
+            "starttime": "2026-04-28T08:00:00",
+            "endtime": "2026-05-12T08:00:00"
+          }
+        ]
+      }
+    ],
+    "query_starttime": "2026-04-28T08:00:00",
+    "query_endtime": "2026-05-12T08:00:00",
+    "resource": "41330",
+    "latest_time": "2026-05-12T08:00:00",
+    "earliest_time": "2000-08-01T00:00:00"
+  }
+}

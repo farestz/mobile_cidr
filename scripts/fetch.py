@@ -1,0 +1,160 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["pyyaml>=6", "httpx>=0.27"]
+# ///
+"""Сбор CIDR-префиксов мобильных операторов РФ.
+
+Источник: RIPEstat Data API (announced-prefixes).
+Читает data/sources.yaml, для каждого ASN получает список анонсируемых
+префиксов, складывает в:
+  data/raw/AS<N>.json          — сырой ответ
+  data/cidrs/<slug>.txt        — plain CIDR на оператора
+  data/cidrs/<slug>.json       — с метаданными
+  data/combined/all-mobile-ru.txt   — объединённый plain
+  data/combined/all-mobile-ru.json  — объединённый с разметкой
+"""
+from __future__ import annotations
+
+import ipaddress
+import json
+import sys
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+import httpx
+import yaml
+
+ROOT = Path(__file__).resolve().parent.parent
+DATA = ROOT / "data"
+SOURCES = DATA / "sources.yaml"
+RAW = DATA / "raw"
+CIDRS = DATA / "cidrs"
+COMBINED = DATA / "combined"
+
+RIPESTAT = "https://stat.ripe.net/data/announced-prefixes/data.json"
+USER_AGENT = "mobile_cidr/0.1 (https://github.com/farestz)"
+
+
+def fetch_asn(client: httpx.Client, asn: int) -> dict:
+    """Получить announced-prefixes для одного ASN."""
+    r = client.get(RIPESTAT, params={"resource": f"AS{asn}"}, timeout=30)
+    r.raise_for_status()
+    payload = r.json()
+    if payload.get("status") != "ok":
+        raise RuntimeError(f"AS{asn}: status={payload.get('status')} messages={payload.get('messages')}")
+    return payload
+
+
+def prefixes_from_payload(payload: dict) -> list[str]:
+    return [p["prefix"] for p in payload.get("data", {}).get("prefixes", [])]
+
+
+def family(cidr: str) -> int:
+    return ipaddress.ip_network(cidr, strict=False).version
+
+
+def sort_key(cidr: str):
+    net = ipaddress.ip_network(cidr, strict=False)
+    return (net.version, int(net.network_address), net.prefixlen)
+
+
+def write_operator(slug: str, asns: list[int], asn_to_prefixes: dict[int, list[str]]) -> dict:
+    """Сохранить cidrs/<slug>.{txt,json}, вернуть запись для combined."""
+    seen: dict[str, list[int]] = {}
+    for asn in asns:
+        for cidr in asn_to_prefixes.get(asn, []):
+            seen.setdefault(cidr, []).append(asn)
+
+    sorted_cidrs = sorted(seen.keys(), key=sort_key)
+
+    (CIDRS / f"{slug}.txt").write_text("\n".join(sorted_cidrs) + "\n", encoding="utf-8")
+
+    doc = {
+        "operator": slug,
+        "asns": asns,
+        "updated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "source": "RIPEstat",
+        "prefixes": [
+            {"cidr": c, "asns": seen[c], "family": family(c)}
+            for c in sorted_cidrs
+        ],
+    }
+    (CIDRS / f"{slug}.json").write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+    return doc
+
+
+def main() -> int:
+    for d in (RAW, CIDRS, COMBINED):
+        d.mkdir(parents=True, exist_ok=True)
+
+    sources = yaml.safe_load(SOURCES.read_text(encoding="utf-8"))
+    operators = sources["operators"]
+
+    asn_to_prefixes: dict[int, list[str]] = {}
+
+    with httpx.Client(headers={"User-Agent": USER_AGENT}) as client:
+        for op in operators:
+            slug = op["slug"]
+            for entry in op["asns"]:
+                asn = entry["asn"]
+                print(f"[{slug}] AS{asn} {entry['name']!r}…", flush=True)
+                payload = fetch_asn(client, asn)
+                (RAW / f"AS{asn}.json").write_text(
+                    json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
+                    encoding="utf-8",
+                )
+                prefixes = prefixes_from_payload(payload)
+                asn_to_prefixes[asn] = prefixes
+                print(f"  → {len(prefixes)} prefixes", flush=True)
+                time.sleep(0.3)  # вежливый rate-limit
+
+    operator_docs = []
+    for op in operators:
+        slug = op["slug"]
+        asns = [e["asn"] for e in op["asns"]]
+        doc = write_operator(slug, asns, asn_to_prefixes)
+        operator_docs.append(doc)
+        v4 = sum(1 for p in doc["prefixes"] if p["family"] == 4)
+        v6 = sum(1 for p in doc["prefixes"] if p["family"] == 6)
+        print(f"[{slug}] total {len(doc['prefixes'])} ({v4} v4 / {v6} v6)", flush=True)
+
+    all_seen: dict[str, dict] = {}
+    for doc in operator_docs:
+        for p in doc["prefixes"]:
+            entry = all_seen.setdefault(p["cidr"], {"cidr": p["cidr"], "family": p["family"], "operators": [], "asns": set()})
+            entry["operators"].append(doc["operator"])
+            entry["asns"].update(p["asns"])
+
+    sorted_all = sorted(all_seen.keys(), key=sort_key)
+    (COMBINED / "all-mobile-ru.txt").write_text("\n".join(sorted_all) + "\n", encoding="utf-8")
+
+    combined_doc = {
+        "updated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "source": "RIPEstat",
+        "operators": [op["slug"] for op in operators],
+        "prefixes": [
+            {
+                "cidr": c,
+                "family": all_seen[c]["family"],
+                "operators": sorted(set(all_seen[c]["operators"])),
+                "asns": sorted(all_seen[c]["asns"]),
+            }
+            for c in sorted_all
+        ],
+    }
+    (COMBINED / "all-mobile-ru.json").write_text(
+        json.dumps(combined_doc, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+
+    v4 = sum(1 for p in combined_doc["prefixes"] if p["family"] == 4)
+    v6 = sum(1 for p in combined_doc["prefixes"] if p["family"] == 6)
+    print(f"\ncombined: {len(sorted_all)} unique CIDR ({v4} v4 / {v6} v6)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
