@@ -107,12 +107,13 @@ echo "95.84.128.1" | ./scripts/lookup.py -              # из stdin
 | `geoip:beeline` | Билайн |
 | `geoip:tele2` | T2 (Tele2) |
 | `geoip:mobile` | union всех четырёх (= `data/combined/all-mobile-ru.txt`) |
-| `geoip:<X>_not` | Парный reverse-вариант для каждого тега выше (всё, чего НЕТ в X) |
 
-Reverse-варианты — это копии CIDR-наборов с флагом `reverse_match=true`
-в protobuf-сообщении `GeoIP`. xray-core при матчинге инвертирует
-результат. Это намного дешевле, чем считать комплемент CIDR-набора
-(который дал бы ~миллион CIDR на ~весь IPv4-простор).
+**Инверсия — только через `!`-префикс в правиле xray**, не через теги
+внутри .dat. xray-core (`common/geodata/rule_parser.go`) читает из .dat
+только список CIDR; поле `reverse_match` в protobuf-сообщении `GeoIP`
+**игнорируется**. Поэтому `_NOT`-теги внутри .dat бесполезны (xray
+матчил бы их как обычный CIDR-список, что в наших дублях дало бы то же,
+что и базовый тег — баг). Правильно: `"ext:mobile-ru.dat:!mobile"`.
 
 Проверка валидности: `V2RAY_LOCATION_ASSET=$PWD/data/geoip v2ray test -c <config>`.
 

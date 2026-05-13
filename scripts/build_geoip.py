@@ -8,23 +8,22 @@
 Формат — Protocol Buffers GeoIPList, как у v2ray-rules-dat:
 
     message CIDR      { bytes ip = 1; uint32 prefix = 2; }
-    message GeoIP     { string country_code = 1; repeated CIDR cidr = 2;
-                        bool reverse_match = 3; }
+    message GeoIP     { string country_code = 1; repeated CIDR cidr = 2; }
     message GeoIPList { repeated GeoIP entry = 1; }
-
-Reverse-match: для каждого основного тега (MTS, MEGAFON, …) пишется
-парный тег с суффиксом `_NOT` и `reverse_match=true`. xray матчит такой
-тег как «всё, чего НЕТ в списке» — нужно для правил «весь трафик кроме
-мобильного». Это дешевле, чем считать комплемент CIDR-набора.
 
 Использование в xray-конфиге (DirectIp / ProxyIp / BlockIp):
     "ext:/path/to/mobile-ru.dat:mobile"      # любой мобильный IP
-    "ext:/path/to/mobile-ru.dat:mobile_not"  # всё, кроме мобильных
+    "ext:/path/to/mobile-ru.dat:!mobile"     # всё, кроме мобильных (инверсия)
     "ext:/path/to/mobile-ru.dat:mts"
 
-Или, если файл подменяет основной geoip.dat (Geoipurl в happ-конфиге),
-ссылаться как обычно:
-    "geoip:mobile", "geoip:mobile_not", "geoip:mts"
+ВАЖНО про инверсию: xray-core НЕ читает поле `reverse_match` из
+protobuf — инверсия делается только `!`-префиксом на уровне правила
+(см. xray-core/common/geodata/rule_parser.go). Поэтому НЕ генерируем
+"_NOT"-теги — они были бы просто дубликатом основного списка CIDR и
+сбивали бы с толку.
+
+Если файл подменяет основной geoip.dat (Geoipurl в happ-конфиге):
+    "geoip:mobile", "!geoip:mobile", "geoip:mts"
 
 Зависимостей нет — wire format кодируется руками (5 строк varint).
 """
@@ -67,19 +66,17 @@ def encode_cidr(cidr_str: str) -> bytes:
     return length_delim(1, ip_bytes) + tag(2, 0) + varint(net.prefixlen)
 
 
-def encode_geoip(country_code: str, cidrs: list[str], reverse_match: bool = False) -> bytes:
+def encode_geoip(country_code: str, cidrs: list[str]) -> bytes:
     payload = length_delim(1, country_code.encode("ascii"))
     for c in cidrs:
         payload += length_delim(2, encode_cidr(c))
-    if reverse_match:
-        payload += tag(3, 0) + varint(1)
     return payload
 
 
-def encode_geoip_list(entries: list[tuple[str, list[str], bool]]) -> bytes:
+def encode_geoip_list(entries: dict[str, list[str]]) -> bytes:
     payload = b""
-    for code, cidrs, reverse in entries:
-        payload += length_delim(1, encode_geoip(code, cidrs, reverse))
+    for code, cidrs in entries.items():
+        payload += length_delim(1, encode_geoip(code, cidrs))
     return payload
 
 
@@ -90,30 +87,23 @@ def read_cidr_file(path: Path) -> list[str]:
 def main() -> int:
     GEOIP.mkdir(parents=True, exist_ok=True)
 
-    base: dict[str, list[str]] = {}
+    entries: dict[str, list[str]] = {}
     for slug in ("mts", "megafon", "beeline", "tele2"):
         f = CIDRS / f"{slug}.txt"
         if not f.exists():
             print(f"skip {slug}: {f} not found", file=sys.stderr)
             continue
-        base[slug.upper()] = read_cidr_file(f)
+        entries[slug.upper()] = read_cidr_file(f)
 
-    base["MOBILE"] = read_cidr_file(COMBINED / "all-mobile-ru.txt")
-
-    # Каждый базовый тег + парный _NOT с reverse_match=true.
-    entries: list[tuple[str, list[str], bool]] = []
-    for code, cidrs in base.items():
-        entries.append((code, cidrs, False))
-        entries.append((f"{code}_NOT", cidrs, True))
+    entries["MOBILE"] = read_cidr_file(COMBINED / "all-mobile-ru.txt")
 
     blob = encode_geoip_list(entries)
     out = GEOIP / "mobile-ru.dat"
     out.write_bytes(blob)
 
     print(f"wrote {out.relative_to(ROOT)} ({len(blob):,} bytes)")
-    for code, cidrs, reverse in entries:
-        marker = "(reverse)" if reverse else ""
-        print(f"  geoip:{code.lower():<14} {len(cidrs):>5} CIDR  {marker}")
+    for code, cidrs in entries.items():
+        print(f"  geoip:{code.lower():<10} {len(cidrs):>5} CIDR")
     return 0
 
 

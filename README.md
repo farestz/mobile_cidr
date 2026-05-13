@@ -37,13 +37,18 @@ curl -fLO "$BASE/all-mobile-ru.txt"
 | `geoip:beeline` | Билайн |
 | `geoip:tele2` | T2 |
 | `geoip:mobile` | Объединённый список (МТС + МегаФон + Билайн + T2) |
-| `geoip:mts_not` | Всё, чего НЕТ в `mts` |
-| `geoip:megafon_not` | Всё, чего НЕТ в `megafon` |
-| `geoip:beeline_not` | Всё, чего НЕТ в `beeline` |
-| `geoip:tele2_not` | Всё, чего НЕТ в `tele2` |
-| `geoip:mobile_not` | Всё, чего НЕТ в `mobile` (любой не-мобильный IP) |
 
-`*_not`-теги используют `reverse_match=true` в GeoIPList — это поле формата GeoIP, xray инвертирует результат проверки. Файл не вырастает в десятки раз, как было бы при вычислении комплемента CIDR-набора: `mobile-ru.dat` со всеми reverse-вариантами весит ~106 КБ.
+### Инверсия (всё, кроме мобильных)
+
+Через `!`-префикс **на стороне xray**, не на стороне файла:
+
+```json
+"source": ["ext:mobile-ru.dat:!mobile"]    // всё, чего НЕТ в mobile
+"source": ["!ext:mobile-ru.dat:mobile"]    // эквивалентно (! можно и снаружи)
+"ip":     ["!geoip:mobile"]                // если файл подменяет geoip.dat
+```
+
+Сам файл инверсию **не несёт**: в формате GeoIPList есть поле `reverse_match`, но xray-core читает только список CIDR из .dat и игнорирует это поле — см. [`common/geodata/rule_parser.go`](https://github.com/XTLS/Xray-core/blob/main/common/geodata/rule_parser.go), где `ReverseMatch` выставляется только из `!`-префикса в строке правила. Поэтому генерировать «инверсные» теги внутри .dat бессмысленно.
 
 В happ-конфиге (раздел `Geoipurl`):
 
