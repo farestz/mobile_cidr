@@ -59,12 +59,15 @@ mobile_cidr/
 │   │   ├── beeline.json
 │   │   ├── tele2.txt
 │   │   └── tele2.json
-│   └── combined/
-│       ├── all-mobile-ru.txt    # объединённый список (для xray DirectIp)
-│       └── all-mobile-ru.json   # с разметкой по оператору
+│   ├── combined/
+│   │   ├── all-mobile-ru.txt    # объединённый список (для xray DirectIp)
+│   │   └── all-mobile-ru.json   # с разметкой по оператору
+│   └── geoip/
+│       └── mobile-ru.dat   # xray-core GeoIPList (теги: mts, megafon, beeline, tele2, mobile)
 └── scripts/
     ├── fetch.py            # фетчер (RIPEstat → data/raw → data/cidrs → combined)
-    └── lookup.py           # проверка: входит ли IP в мобильные диапазоны и чей
+    ├── lookup.py           # проверка: входит ли IP в мобильные диапазоны и чей
+    └── build_geoip.py      # cidrs/* → data/geoip/mobile-ru.dat (xray-core формат)
 ```
 
 ## Использование
@@ -81,6 +84,37 @@ mobile_cidr/
 echo "95.84.128.1" | ./scripts/lookup.py -              # из stdin
 ```
 Формат вывода (TSV): `<ip>\t<operator(s)>\tAS<n>\t<matched-cidr>` или `<ip>\tNOT_MOBILE`.
+
+**Собрать xray-core geoip.dat:**
+```bash
+./scripts/build_geoip.py
+# → data/geoip/mobile-ru.dat (~50 KB)
+```
+Внутри пять тегов:
+
+| Тег | Что включает |
+|-----|--------------|
+| `geoip:mts` | МТС (все ASN из `sources.yaml`) |
+| `geoip:megafon` | МегаФон |
+| `geoip:beeline` | Билайн |
+| `geoip:tele2` | T2 (Tele2) |
+| `geoip:mobile` | union всех четырёх (= `data/combined/all-mobile-ru.txt`) |
+
+Проверка валидности: `V2RAY_LOCATION_ASSET=$PWD/data/geoip v2ray test -c <config>`.
+
+**Использование в xray/happ-конфиге** (см. `../routing/`):
+
+Если файл подменяет основной `geoip.dat` (через `Geoipurl`):
+```json
+"DirectIp": ["geoip:mobile"]
+"ProxyIp":  ["geoip:mts", "geoip:megafon"]
+```
+
+Если используется как дополнительный (не подменяя `geoip.dat`):
+```json
+"DirectIp": ["ext:mobile-ru.dat:mobile"]
+```
+Файл должен лежать в asset-директории xray (`V2RAY_LOCATION_ASSET` / `XRAY_LOCATION_ASSET`).
 
 ## Формат хранения
 
