@@ -12,7 +12,7 @@ on:
       - '.github/workflows/build.yml'
 
 permissions:
-  contents: write   # требуется для обновления rolling-релиза `rolling`
+  contents: write   # требуется для обновления latest-релиза `latest`
 
 jobs:
   build:
@@ -47,7 +47,7 @@ jobs:
             echo "geoip.dat: $(stat -c%s data/geoip/mobile-ru.dat) bytes"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Update rolling release
+      - name: Update latest release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -68,17 +68,26 @@ jobs:
           EOF
           )
 
-          # Удаляем старый рилиз и тег, чтобы создать заново со свежими ассетами.
-          gh release delete rolling --yes --cleanup-tag 2>/dev/null || true
-
-          gh release create rolling \
-            --title "rolling" \
-            --notes "$NOTES" \
-            --target "${{ github.sha }}" \
-            data/geoip/mobile-ru.dat \
-            data/combined/all-mobile-ru.txt \
-            data/combined/all-mobile-ru.json \
-            data/cidrs/mts.txt \
-            data/cidrs/megafon.txt \
-            data/cidrs/beeline.txt \
+          ASSETS=(
+            data/geoip/mobile-ru.dat
+            data/combined/all-mobile-ru.txt
+            data/combined/all-mobile-ru.json
+            data/cidrs/mts.txt
+            data/cidrs/megafon.txt
+            data/cidrs/beeline.txt
             data/cidrs/tele2.txt
+          )
+
+          # Если релиза нет — создаём; если есть — обновляем notes и перезаливаем ассеты
+          # (через --clobber). Этот путь надёжнее delete+recreate (тот спотыкался об
+          # eventual consistency после удаления тега).
+          if gh release view latest >/dev/null 2>&1; then
+            gh release edit latest --notes "$NOTES"
+            gh release upload latest --clobber "${ASSETS[@]}"
+          else
+            gh release create latest \
+              --title "latest" \
+              --notes "$NOTES" \
+              --target "${{ github.sha }}" \
+              "${ASSETS[@]}"
+          fi
