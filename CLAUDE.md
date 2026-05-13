@@ -100,13 +100,19 @@ echo "95.84.128.1" | ./scripts/lookup.py -              # из stdin
 ```
 Внутри пять тегов:
 
-| Тег | Что включает |
-|-----|--------------|
+| Тег | Что матчит |
+|-----|------------|
 | `geoip:mts` | МТС (все ASN из `sources.yaml`) |
 | `geoip:megafon` | МегаФон |
 | `geoip:beeline` | Билайн |
 | `geoip:tele2` | T2 (Tele2) |
 | `geoip:mobile` | union всех четырёх (= `data/combined/all-mobile-ru.txt`) |
+| `geoip:<X>_not` | Парный reverse-вариант для каждого тега выше (всё, чего НЕТ в X) |
+
+Reverse-варианты — это копии CIDR-наборов с флагом `reverse_match=true`
+в protobuf-сообщении `GeoIP`. xray-core при матчинге инвертирует
+результат. Это намного дешевле, чем считать комплемент CIDR-набора
+(который дал бы ~миллион CIDR на ~весь IPv4-простор).
 
 Проверка валидности: `V2RAY_LOCATION_ASSET=$PWD/data/geoip v2ray test -c <config>`.
 

@@ -30,13 +30,20 @@ curl -fLO "$BASE/all-mobile-ru.txt"
 
 `mobile-ru.dat` — Protocol Buffers `GeoIPList`, тот же формат, что у [v2ray-rules-dat](https://github.com/Loyalsoldier/v2ray-rules-dat). Внутри пять тегов:
 
-| Тег | Что внутри |
-|-----|------------|
+| Тег | Что матчит |
+|-----|-----------|
 | `geoip:mts` | Все CIDR МТС |
 | `geoip:megafon` | МегаФон |
 | `geoip:beeline` | Билайн |
 | `geoip:tele2` | T2 |
 | `geoip:mobile` | Объединённый список (МТС + МегаФон + Билайн + T2) |
+| `geoip:mts_not` | Всё, чего НЕТ в `mts` |
+| `geoip:megafon_not` | Всё, чего НЕТ в `megafon` |
+| `geoip:beeline_not` | Всё, чего НЕТ в `beeline` |
+| `geoip:tele2_not` | Всё, чего НЕТ в `tele2` |
+| `geoip:mobile_not` | Всё, чего НЕТ в `mobile` (любой не-мобильный IP) |
+
+`*_not`-теги используют `reverse_match=true` в GeoIPList — это поле формата GeoIP, xray инвертирует результат проверки. Файл не вырастает в десятки раз, как было бы при вычислении комплемента CIDR-набора: `mobile-ru.dat` со всеми reverse-вариантами весит ~106 КБ.
 
 В happ-конфиге (раздел `Geoipurl`):
 
