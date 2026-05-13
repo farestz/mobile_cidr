@@ -2,3 +2,10 @@ __pycache__/
 *.pyc
 .venv/
 .DS_Store
+
+# Артефакты сборки — генерируются scripts/fetch.py и scripts/build_geoip.py.
+# В git хранится только sources.yaml; всё, что из него собирается, — в CI.
+data/raw/
+data/cidrs/
+data/combined/
+data/geoip/

@@ -1,0 +1,84 @@
+name: build
+
+on:
+  schedule:
+    - cron: '17 4 * * *'  # ежедневно 04:17 UTC
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - 'data/sources.yaml'
+      - 'scripts/**'
+      - '.github/workflows/build.yml'
+
+permissions:
+  contents: write   # требуется для обновления rolling-релиза `latest`
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Fetch CIDR from RIPEstat
+        run: ./scripts/fetch.py
+
+      - name: Build xray-core geoip.dat
+        run: ./scripts/build_geoip.py
+
+      - name: Summary
+        run: |
+          {
+            echo "### Build summary"
+            echo ""
+            echo "| Operator | CIDR |"
+            echo "|---|---:|"
+            for f in data/cidrs/*.txt; do
+              op=$(basename "$f" .txt)
+              cnt=$(wc -l < "$f")
+              echo "| $op | $cnt |"
+            done
+            cnt=$(wc -l < data/combined/all-mobile-ru.txt)
+            echo "| **combined** | **$cnt** |"
+            echo ""
+            echo "geoip.dat: $(stat -c%s data/geoip/mobile-ru.dat) bytes"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Update rolling release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NOTES=$(cat <<EOF
+          Auto-generated CIDR lists for Russian mobile operators (МТС / МегаФон / Билайн / T2).
+
+          Source: RIPEstat announced-prefixes per ASN listed in [sources.yaml](../../blob/main/data/sources.yaml).
+          Built: ${{ github.run_started_at }} (run ${{ github.run_id }}, commit ${{ github.sha }}).
+
+          ## Files
+
+          - \`mobile-ru.dat\` — xray-core GeoIPList (теги: \`mts\`, \`megafon\`, \`beeline\`, \`tele2\`, \`mobile\`)
+          - \`all-mobile-ru.txt\` — plain CIDR, объединённый список
+          - \`all-mobile-ru.json\` — combined с разметкой по оператору
+          - \`<operator>.txt\` — plain CIDR на оператора
+
+          Stable URL: https://github.com/${{ github.repository }}/releases/latest/download/mobile-ru.dat
+          EOF
+          )
+
+          # Удаляем старый рилиз и тег, чтобы создать заново со свежими ассетами.
+          gh release delete latest --yes --cleanup-tag 2>/dev/null || true
+
+          gh release create latest \
+            --title "latest" \
+            --notes "$NOTES" \
+            --target "${{ github.sha }}" \
+            data/geoip/mobile-ru.dat \
+            data/combined/all-mobile-ru.txt \
+            data/combined/all-mobile-ru.json \
+            data/cidrs/mts.txt \
+            data/cidrs/megafon.txt \
+            data/cidrs/beeline.txt \
+            data/cidrs/tele2.txt
